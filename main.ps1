@@ -1,3 +1,21 @@
+[CmdletBinding()]
+Param(
+    [Parameter(Mandatory)]
+    [string]$CandidateName,
+
+    [Parameter(Mandatory, ParameterSetName='Wicresoft')]
+    [switch]$Wicresoft,
+
+    [Parameter(Mandatory, ParameterSetName='Chinasoft')]
+    [switch]$Chinasoft,
+
+    [Parameter(Mandatory, ParameterSetName='Isoftstone')]
+    [switch]$Isoftstone,
+
+    [Parameter(Mandatory, ParameterSetName='Pegatron')]
+    [switch]$Pegatron
+)
+
 function WriteHelloWorld {
     #Write-Host "Hello PowerShell world!" -BackgroundColor Black -ForegroundColor Green -NoNewline
     Write-Host " ('-. .-.    ('-.                                               _ (`-.                 (`\ .-') /`   ('-.    _  .-')     .-')     ('-. .-.    ('-.                                 (`\ .-') /`              _  .-')               _ .-') _   ";
