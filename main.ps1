@@ -16,6 +16,83 @@ Param(
     [switch]$Pegatron
 )
 
+function Invoke-Executable {
+    # Runs the specified executable and captures its exit code, stdout
+    # and stderr.
+    # see: https://stackoverflow.com/questions/24370814/how-to-capture-process-output-asynchronously-in-powershell
+    # Returns: custom object.
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [String]$sExeFile,
+        [Parameter(Mandatory = $false)]
+        [String[]]$cArgs,
+        [Switch]$AllowError
+    )
+
+    Write-Host($sExeFile, $cArgs)
+
+    # Setting process invocation parameters.
+    $oPsi = New-Object -TypeName System.Diagnostics.ProcessStartInfo
+    $oPsi.CreateNoWindow = $true
+    $oPsi.UseShellExecute = $false
+    $oPsi.RedirectStandardOutput = $true
+    $oPsi.RedirectStandardError = $true
+    $oPsi.FileName = $sExeFile
+    if (! [String]::IsNullOrEmpty($cArgs)) {
+        $oPsi.Arguments = $cArgs
+    }
+
+    # Creating process object.
+    $oProcess = New-Object -TypeName System.Diagnostics.Process
+    $oProcess.StartInfo = $oPsi
+
+    # Creating string builders to store stdout and stderr.
+    $oStdOutBuilder = New-Object -TypeName System.Text.StringBuilder
+    $oStdErrBuilder = New-Object -TypeName System.Text.StringBuilder
+
+    # Adding event handers for stdout and stderr.
+    $sScripBlock = {
+        if (! [String]::IsNullOrEmpty($EventArgs.Data)) {
+            $Event.MessageData.AppendLine($EventArgs.Data)
+        }
+    }
+    $oStdOutEvent = Register-ObjectEvent -InputObject $oProcess `
+        -Action $sScripBlock -EventName 'OutputDataReceived' `
+        -MessageData $oStdOutBuilder
+    $oStdErrEvent = Register-ObjectEvent -InputObject $oProcess `
+        -Action $sScripBlock -EventName 'ErrorDataReceived' `
+        -MessageData $oStdErrBuilder
+
+    # Starting process.
+    [Void]$oProcess.Start()
+    $oProcess.BeginOutputReadLine()
+    $oProcess.BeginErrorReadLine()
+    [Void]$oProcess.WaitForExit(2000)
+
+    # Unregistering events to retrieve process output.
+    Unregister-Event -SourceIdentifier $oStdOutEvent.Name
+    Unregister-Event -SourceIdentifier $oStdErrEvent.Name
+
+    $oResult = New-Object -TypeName PSObject -Property ([Ordered]@{
+            "ExeFile"  = $sExeFile;
+            "Args"     = $cArgs -join " ";
+            "ExitCode" = $oProcess.ExitCode;
+            "StdOut"   = $oStdOutBuilder.ToString().Trim();
+            "StdErr"   = $oStdErrBuilder.ToString().Trim()
+        })
+
+    if ($oResult.ExitCode -ne 0 -and -not $AllowError) {
+
+        Write-Host($oResult.StdOut, $oResult.StdErr)
+        Throw "Command failed: $oResult"
+    }
+
+    #For debug - uncomment this line to dump command results to console.
+    #Write-Host $oResult
+    return $oResult
+}
+
 function WriteHelloWorld {
     #Write-Host "Hello PowerShell world!" -BackgroundColor Black -ForegroundColor Green -NoNewline
     Write-Host " ('-. .-.    ('-.                                               _ (`-.                 (`\ .-') /`   ('-.    _  .-')     .-')     ('-. .-.    ('-.                                 (`\ .-') /`              _  .-')               _ .-') _   ";
