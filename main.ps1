@@ -1,20 +1,41 @@
-[CmdletBinding()]
-Param(
-    [Parameter(Mandatory)]
-    [string]$CandidateName,
+<#
+.SYNOPSIS
+This script switches the TPM used on the DUT.
 
-    [Parameter(Mandatory, ParameterSetName='Wicresoft')]
-    [switch]$Wicresoft,
+.DESCRIPTION
+This script switches the TPM used on the DUT.
+Includes extra variable setting and FPT commands needed on LunarLake and later platforms.
+The script is backwards compatible and won't run those extra commands on older platforms.
 
-    [Parameter(Mandatory, ParameterSetName='Chinasoft')]
-    [switch]$Chinasoft,
+.PARAMETER GetCurrentTpmType
+Get the current TPM type (dTPM, fTPM, or pTPM).
 
-    [Parameter(Mandatory, ParameterSetName='Isoftstone')]
-    [switch]$Isoftstone,
+.PARAMETER SetTpmType
+The new TPM to switch to. Valid values are [dTPM, fTPM, pTPM]. dTPM is for
+discrete TPM, fTPM is for PTT, and pTPM is for PSE(Partner Security Engin)/Pluton TPM.
 
-    [Parameter(Mandatory, ParameterSetName='Pegatron')]
-    [switch]$Pegatron
+.EXAMPLE
+Configure-Tpm.ps1 -GetCurrentTpmType
+
+.EXAMPLE
+Configure-Tpm.ps1 -SetTpmType dTPM
+
+#>
+
+# Copyright (C) Microsoft Corporation.  All Rights Reserved.
+#Requires -RunAsAdministrator
+#Requires -Version 7
+param(
+    [Parameter(Mandatory = $true, ParameterSetName = "Get")]
+    [switch]
+    $GetCurrentTpmType,
+
+    [Parameter(Mandatory = $true, ParameterSetName = "Set")]
+    [ValidateSet('dTPM', 'fTPM', 'pTPM')]
+    [string]$SetTpmType
+
 )
+
 
 function WriteHelloWorld {
     #Write-Host "Hello PowerShell world!" -BackgroundColor Black -ForegroundColor Green -NoNewline
