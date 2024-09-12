@@ -143,8 +143,31 @@ function PauseThenExit {
     Exit $ExitCode
 }
 
+# $targetDriverName : surfacehotplug.inf
+function uninstallSpecificDriver {
+    param (
+        # Parameter help description
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [string[]]$targetDriverName
+    )
+    $driverList = dism /online /get-drivers
 
+    # transfer specific driver name to "oemxxx.inf"
+    $pubName = $driverList | Select-String -Context 1 'Original File Name : $targetDriverName' |
+                ForEach-Object { ($_.Context.PreContext[0] -split ' : +')[1] }
 
+    if ($null -ne $pubName) {
+        Write-Host "successed to get inf name" -BackgroundColor Green
+        }
+    else {
+        Write-Host "Failed to get inf name!" -BackgroundColor Red
+        exit 0
+    }
+
+    pnputil.exe /delete-driver $pubName /uninstall
+
+    Write-Host "Success uninstalled driver" -BackgroundColor Green
+}
 
 WriteHelloWorld1
 
